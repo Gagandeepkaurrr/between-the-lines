@@ -1,0 +1,114 @@
+/* Book search dialog */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: #21191479;
+  backdrop-filter: blur(4px);
+  padding: 40px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.search-modal {
+  position: relative;
+  max-width: 720px;
+  width: 100%;
+  max-height: 88vh;
+  overflow: auto;
+  background: white;
+  padding: 36px;
+  border-radius: 10px;
+  box-shadow: 0 20px 100px #241c1555;
+}
+.search-modal h2 {
+  font-size: 35px;
+  margin-bottom: 10px;
+}
+.close-button {
+  position: absolute;
+  right: 20px;
+  top: 15px;
+  border: 0;
+  background: transparent;
+  font-size: 28px;
+  color: #514740;
+  padding: 5px;
+}
+.book-search-form {
+  display: flex;
+  gap: 10px;
+  margin: 25px 0;
+}
+.book-search-form .search-input {
+  max-width: none;
+}
+.book-search-form input {
+  font-size: 12px;
+}
+.search-intro {
+  text-align: center;
+  color: #594632;
+  padding: 40px 5px;
+}
+.search-intro p {
+  margin: 15px;
+  font-family: Georgia, serif;
+  font-size: 19px;
+}
+.search-intro small {
+  font-size: 10px;
+}
+.search-result {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  border-top: 1px solid var(--line);
+  padding: 18px 0;
+}
+.search-result .cover {
+  width: 55px;
+  min-width: 55px;
+  height: 81px;
+}
+.search-result .cover-fallback {
+  padding: 4px;
+  border-width: 3px;
+  gap: 2px;
+}
+.search-result .cover-fallback svg {
+  width: 14px;
+}
+.search-result .cover-fallback span {
+  font-size: 9px;
+}
+.search-result .cover-fallback small {
+  display: none;
+}
+.search-result > div:nth-child(2) {
+  flex: 1;
+  min-width: 0;
+}
+.search-result h3 {
+  font-size: 20px;
+  margin: 0 0 5px;
+}
+.search-result p {
+  font-size: 11px;
+  color: var(--muted);
+  margin: 0 0 5px;
+}
+.search-result small {
+  font-size: 9px;
+  color: #65503b;
+}
+.search-result button {
+  white-space: nowrap;
+}
+.added-button {
+  border: 0;
+  background: none;
+  color: #748160;
+  font-size: 11px;
+  padding: 10px;
+}

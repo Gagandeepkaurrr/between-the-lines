@@ -1,0 +1,175 @@
+/* Original wooden bookshelf illustration */
+.preview {
+  height: 370px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 25px;
+}
+.preview-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse, #f3efea 0, transparent 68%);
+  z-index: -1;
+}
+.preview-note {
+  font:
+    italic 19px "Libre Caslon Display",
+    Georgia,
+    serif;
+  color: #594632;
+  margin-bottom: 33px;
+}
+.spines {
+  display: flex;
+  gap: 6px;
+  align-items: flex-end;
+  height: 226px;
+  padding: 0 30px;
+  position: relative;
+  z-index: 1;
+}
+.spine {
+  width: 65px;
+  border-radius: 3px 5px 1px 1px;
+  background: linear-gradient(90deg, #0004, transparent 12%, #fff1 85%, #0002);
+  box-shadow:
+    4px 1px 5px #37271927,
+    inset 3px 0 0 #ffffff13;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  color: #f3e5c3;
+  padding: 20px 4px 15px;
+  position: relative;
+}
+.spine:before,
+.spine:after {
+  content: "";
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  height: 4px;
+  border-top: 1px solid #dfc79c80;
+  border-bottom: 1px solid #dfc79c80;
+  top: 10px;
+}
+.spine:after {
+  top: auto;
+  bottom: 8px;
+}
+.spine span {
+  writing-mode: vertical-rl;
+  font:
+    25px Georgia,
+    serif;
+  letter-spacing: 1px;
+}
+.spine i {
+  font-size: 5px;
+  letter-spacing: 1px;
+  writing-mode: vertical-rl;
+  height: 59px;
+}
+.spine-0 {
+  height: 198px;
+  background-color: #6a393d;
+  transform: rotate(-9deg);
+  transform-origin: bottom;
+}
+.spine-1 {
+  height: 222px;
+  background-color: #4f5445;
+}
+.spine-2 {
+  height: 185px;
+  background-color: #806446;
+}
+.spine-3 {
+  height: 213px;
+  background-color: #384d50;
+}
+.spine-4 {
+  height: 204px;
+  background-color: #644633;
+  transform: rotate(7deg);
+  transform-origin: bottom;
+}
+.wood-shelf {
+  flex-shrink: 0;
+  height: 17px;
+  width: 100%;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(1deg, transparent 0 3px, #3f221419 4px 5px),
+    linear-gradient(#a77b52, #a27954 45%, #785236 50%, #88623e);
+  box-shadow: 0 13px 16px -5px #50341c44;
+  z-index: 2;
+}
+.preview-caption {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #594632;
+  font-size: 10px;
+  margin-top: 26px;
+  letter-spacing: 0.4px;
+}
+
+/* Login and signup */
+.auth-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 80px;
+  max-width: 1120px;
+  margin: 65px auto 80px;
+  padding: 0 30px;
+}
+.auth-aside {
+  padding-top: 40px;
+}
+.auth-aside h1 {
+  font-size: 51px;
+  line-height: 1.09;
+  letter-spacing: -1.8px;
+  margin-bottom: 24px;
+}
+.auth-aside h1 em {
+  color: var(--burgundy);
+  font-weight: 600;
+}
+.auth-aside .preview {
+  height: 330px;
+  max-width: 410px;
+}
+.auth-card {
+  background: white;
+  border: 1px solid var(--line);
+  padding: 38px;
+  border-radius: 8px;
+}
+.auth-card h2 {
+  font-size: 35px;
+  line-height: 1.15;
+  margin-bottom: 12px;
+}
+.auth-switch {
+  font-size: 11px;
+  text-align: center;
+  color: var(--muted);
+  margin: 25px 0 0;
+}
+.auth-switch a {
+  color: var(--burgundy);
+  text-decoration: underline;
+  margin-left: 4px;
+}
+
+@media (max-width: 1100px) {
+  .auth-layout {
+    gap: 45px;
+  }
+}
