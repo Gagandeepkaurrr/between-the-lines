@@ -5,6 +5,7 @@ import { useAuth } from "./AuthContext";
 import { api } from "./api";
 import { Icon, Cover, ErrorMessage, statuses } from "./components";
 import SearchModal from "./SearchModal";
+import BookChat from "./BookChat";
 
 export default function Bookshelf() {
   const { user } = useAuth();
@@ -93,6 +94,7 @@ export default function Bookshelf() {
       {!loading && !error && (
         <ReadingGoal key={user.id} userId={user.id} finished={stats.finished} />
       )}
+      <BookChat key={user.id} />
       <section className="library">
         <div className="library-toolbar">
           <div

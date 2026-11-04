@@ -1,0 +1,25 @@
+.book-chat {
+  padding: 25px 28px;
+  margin-bottom: 37px;
+  background: white;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+.chat-heading { display: flex; justify-content: space-between; gap: 20px; align-items: start; }
+.chat-heading .eyebrow { display: block; margin-bottom: 9px; }
+.chat-heading h2 { font-size: 29px; margin: 0 0 9px; }
+.chat-heading p, .chat-note, .chat-welcome { color: var(--muted); font-size: 12px; line-height: 1.7; }
+.chat-transcript { max-height: 360px; overflow-y: auto; margin: 18px 0; }
+.chat-message { border-radius: 8px; background: #f6f3ed; padding: 13px 16px; margin: 10px 0; max-width: 90%; overflow-wrap: anywhere; }
+.chat-message.user { background: #eee8de; margin-left: auto; }
+.chat-message strong { font-size: 11px; }
+.chat-message p { margin: 7px 0 0; white-space: pre-wrap; font-size: 13px; line-height: 1.7; }
+.chat-form label { display: block; font-size: 12px; margin-bottom: 8px; }
+.chat-form > div { display: flex; gap: 10px; }
+.chat-form input { flex: 1; min-width: 0; padding: 12px; }
+.chat-note { margin: 12px 0 0; font-size: 11px; }
+@media (max-width: 600px) {
+  .book-chat { padding: 20px 16px; }
+  .chat-heading { flex-direction: column; }
+  .chat-message { max-width: 100%; }
+}

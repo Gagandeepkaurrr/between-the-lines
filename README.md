@@ -230,3 +230,17 @@ This checks that the frontend compiles and creates `frontend/dist`. For everyday
 - **Missing covers/fonts:** covers have a designed fallback; fonts also fall back to system serif and sans-serif fonts if Google Fonts is unavailable.
 
 The code is a learning-focused local application. Before opening registration to the public, add login/signup rate limits and an account recovery flow appropriate to your hosting setup.
+
+## Free AI reading companion
+
+The bookshelf includes a simple AI chat using [Ollama](https://ollama.com/download), with no paid API or API key. Install Ollama on the **same machine as FastAPI**, start Ollama, and download the small default model:
+
+```bash
+ollama pull llama3.2:1b
+```
+
+If Ollama is not already running, start it with `ollama serve`. Restart FastAPI and open your bookshelf to chat. The first reply can be slower while the model loads. In `backend/.env`, optionally change `OLLAMA_MODEL` to another installed model or `OLLAMA_BASE_URL` to your Ollama server. A hosted backend needs its own reachable Ollama instance; it cannot use a visitor's laptop automatically.
+
+`POST /api/chat` requires login and accepts up to 12 user/assistant messages, each up to 2,000 characters. The backend adds up to 50 of the signed-in reader's latest book titles, authors, statuses, and ratings as context; it excludes journal notes and quotes. Conversation history stays in page memory and clears when leaving or refreshing the page. The assistant cannot edit books or browse the web. If Ollama or the model is unavailable, the chat shows a setup error and keeps the question ready to retry.
+
+The integration uses Ollama's [chat API](https://docs.ollama.com/api/chat). Local inference uses your server's computing resources; no subscription is required.

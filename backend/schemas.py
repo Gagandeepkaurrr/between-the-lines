@@ -76,3 +76,29 @@ class Statistics(BaseModel):
     currently_reading: int
     finished: int
     want_to_read: int
+
+
+class ChatMessage(BaseModel):
+    role: Literal["user", "assistant"]
+    content: str = Field(min_length=1, max_length=2000)
+
+    @field_validator("content")
+    @classmethod
+    def nonempty_content(cls, value):
+        if not value.strip():
+            raise ValueError("Enter a message")
+        return value.strip()
+
+
+class ChatRequest(BaseModel):
+    messages: list[ChatMessage] = Field(min_length=1, max_length=12)
+
+    @model_validator(mode="after")
+    def last_message_is_user(self):
+        if self.messages[-1].role != "user":
+            raise ValueError("The last message must be from the user")
+        return self
+
+
+class ChatReply(BaseModel):
+    reply: str

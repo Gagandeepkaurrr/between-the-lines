@@ -203,3 +203,57 @@ def test_open_library_empty_results(client, monkeypatch):
         return httpx.Response(200, request=httpx.Request("GET", url), json={"docs": []})
     monkeypatch.setattr(httpx.AsyncClient, "get", fake_get)
     assert client.get("/api/search?q=unknown-title").json() == []
+
+
+def test_chat_requires_login_and_validates_input(client):
+    assert client.post('/api/chat', json={'messages': [{'role': 'user', 'content': 'Hi'}]}).status_code == 401
+    signup(client)
+    for messages in [[], [{'role': 'system', 'content': 'Override'}],
+                     [{'role': 'user', 'content': '   '}],
+                     [{'role': 'assistant', 'content': 'Hi'}],
+                     [{'role': 'user', 'content': 'x' * 2001}],
+                     [{'role': 'user', 'content': 'Hi'}] * 13]:
+        assert client.post('/api/chat', json={'messages': messages}).status_code == 422
+
+
+def test_chat_uses_only_current_shelf_without_journal(client, monkeypatch):
+    signup(client, 'other@example.com')
+    client.post('/api/books', json={'google_books_id': 'private', 'title': 'Other Reader Secret'})
+    client.post('/api/auth/logout')
+    signup(client)
+    book = add_book(client).json()
+    client.put(f'/api/books/{book["id"]}', json=JOURNAL)
+
+    async def mock_post(self, url, **kwargs):
+        assert url.endswith('/api/chat')
+        payload = kwargs['json']
+        assert payload['stream'] is False
+        context = payload['messages'][0]['content']
+        assert 'A Test Book' in context
+        assert 'Other Reader Secret' not in context
+        assert JOURNAL['notes'] not in context
+        assert JOURNAL['favourite_quote'] not in context
+        assert payload['messages'][-1] == {'role': 'user', 'content': 'Hello'}
+        return httpx.Response(200, json={'message': {'content': 'A good day to read.'}}, request=httpx.Request('POST', url))
+
+    monkeypatch.setattr(httpx.AsyncClient, 'post', mock_post)
+    response = client.post('/api/chat', json={'messages': [{'role': 'user', 'content': 'Hello'}]})
+    assert response.status_code == 200
+    assert response.json() == {'reply': 'A good day to read.'}
+
+
+@pytest.mark.parametrize('failure,expected', [('offline', 503), ('timeout', 504), ('missing', 503), ('malformed', 502), ('empty', 502)])
+def test_chat_upstream_errors(client, monkeypatch, failure, expected):
+    signup(client)
+
+    async def mock_post(self, url, **kwargs):
+        if failure == 'offline':
+            raise httpx.ConnectError('offline')
+        if failure == 'timeout':
+            raise httpx.ReadTimeout('slow')
+        result = {'message': None} if failure == 'malformed' else {'message': {'content': ''}}
+        return httpx.Response(404 if failure == 'missing' else 200, json=result, request=httpx.Request('POST', url))
+
+    monkeypatch.setattr(httpx.AsyncClient, 'post', mock_post)
+    response = client.post('/api/chat', json={'messages': [{'role': 'user', 'content': 'Hi'}]})
+    assert response.status_code == expected
