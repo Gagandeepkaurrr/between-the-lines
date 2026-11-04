@@ -257,3 +257,50 @@ def test_chat_upstream_errors(client, monkeypatch, failure, expected):
     monkeypatch.setattr(httpx.AsyncClient, 'post', mock_post)
     response = client.post('/api/chat', json={'messages': [{'role': 'user', 'content': 'Hi'}]})
     assert response.status_code == expected
+
+
+def test_hosted_chat_uses_groq(client, monkeypatch):
+    signup(client)
+    monkeypatch.setenv('GROQ_API_KEY', 'test-key')
+
+    async def mock_post(self, url, **kwargs):
+        assert url == 'https://api.groq.com/openai/v1/chat/completions'
+        assert kwargs['headers']['Authorization'] == 'Bearer test-key'
+        assert kwargs['json']['max_tokens'] == 400
+        assert 'options' not in kwargs['json']
+        return httpx.Response(200, json={'choices': [{'message': {'content': 'Hello reader'}}]}, request=httpx.Request('POST', url))
+
+    monkeypatch.setattr(httpx.AsyncClient, 'post', mock_post)
+    response = client.post('/api/chat', json={'messages': [{'role': 'user', 'content': 'Hi'}]})
+    assert response.status_code == 200
+    assert response.json()['reply'] == 'Hello reader'
+
+
+@pytest.mark.parametrize('upstream,expected', [(400, 503), (401, 503), (403, 503), (404, 503), (429, 429), (500, 503)])
+def test_hosted_chat_errors(client, monkeypatch, upstream, expected):
+    signup(client)
+    monkeypatch.setenv('GROQ_API_KEY', 'test-key')
+
+    async def mock_post(self, url, **kwargs):
+        return httpx.Response(upstream, json={}, request=httpx.Request('POST', url))
+
+    monkeypatch.setattr(httpx.AsyncClient, 'post', mock_post)
+    response = client.post('/api/chat', json={'messages': [{'role': 'user', 'content': 'Hi'}]})
+    assert response.status_code == expected
+    assert 'test-key' not in response.text
+
+
+@pytest.mark.parametrize("base_url", ["http://127.0.0.1:11434", "http://localhost:11434", "http://[::1]:11434"])
+def test_render_chat_needs_hosted_configuration(client, monkeypatch, base_url):
+    signup(client)
+    monkeypatch.setenv('RENDER', 'true')
+    monkeypatch.delenv('GROQ_API_KEY', raising=False)
+    monkeypatch.setenv('OLLAMA_BASE_URL', base_url)
+    response = client.post('/api/chat', json={'messages': [{'role': 'user', 'content': 'Hi'}]})
+    assert response.status_code == 503
+    assert 'GROQ_API_KEY' in response.json()['detail']
+
+
+def test_health_identifies_groq_capable_release(client):
+    response = client.get('/api/health')
+    assert response.json() == {'status': 'ok', 'version': 'chat-groq-v2'}

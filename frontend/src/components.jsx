@@ -69,6 +69,10 @@ export function Icon({ name = "book", size = 22 }) {
         <path d="m16 16 5 5" />
       </>
     ),
+    sparkle: <><path d="m12 3 2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5Z" /><path d="M20 2v4m-2-2h4" /></>,
+    chat: <path d="M21 11.5a8.5 8.5 0 0 1-8.5 8.5H4l-2 2V11.5A8.5 8.5 0 0 1 10.5 3h2A8.5 8.5 0 0 1 21 11.5Z" />,
+    close: <path d="m6 6 12 12M6 18 18 6" />,
+    send: <><path d="m21 3-7 18-4-7-7-4Z" /><path d="m10 14 11-11" /></>,
     plus: <path d="M12 5v14M5 12h14" />,
     arrow: <path d="M4 12h16m-6-6 6 6-6 6" />,
     leaf: (

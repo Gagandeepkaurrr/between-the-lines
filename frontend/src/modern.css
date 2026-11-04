@@ -1,0 +1,103 @@
+/* A shared glass surface system, layered over the original reading-journal layout. */
+:root {
+  --muted: #665f58;
+  --line: #dcded3;
+  --glass: rgba(255, 255, 255, .74);
+  --glass-edge: rgba(255, 255, 255, .94);
+  --surface-shadow: 0 8px 30px rgba(62, 72, 52, .06), inset 0 1px 0 #fff;
+  background: #f4f5ef;
+}
+#root::before { opacity: .08; }
+#root::after { content: ""; position: fixed; inset: 0; z-index: -2; pointer-events: none; background: radial-gradient(ellipse at 12% 0%, #cdded36b, transparent 45%), radial-gradient(ellipse at 80% 45%, #e3daf077, transparent 55%); }
+.background-stickers { opacity: .35; }
+.reader-app { padding-right: 390px; }
+header { height: 104px; padding-inline: 40px; border-color: #cdd7ca88; }
+.brand { font-size: 25px; }
+.brand-icon { display: grid; place-items: center; width: 47px; height: 49px; border-radius: 16px; border: 1px solid var(--glass-edge); background: linear-gradient(140deg, #fff, #e6d5db80); box-shadow: var(--surface-shadow); }
+nav { gap: 20px; }
+.reader-app .dashboard { padding: 36px 40px 0; }
+.page-heading h1 { font-size: clamp(36px, 3.3vw, 49px); }
+.page-heading .eyebrow { font-size: 9px; letter-spacing: 1.7px; }
+.page-heading .muted { font-size: 12px; line-height: 1.8; }
+.button { border-radius: 12px; box-shadow: 0 4px 12px #6d3a4314; transition: transform .18s, box-shadow .18s; }
+.button:hover { transform: translateY(-1px); box-shadow: 0 6px 16px #6d3a4320; }
+.stats { gap: 12px; background: transparent; border: 0; padding: 0; margin-bottom: 24px; }
+.stats .stat { min-width: 0; gap: 12px; padding: 18px 15px; border: 1px solid var(--glass-edge); border-radius: 20px; background: var(--glass); -webkit-backdrop-filter: blur(16px); backdrop-filter: blur(16px); box-shadow: var(--surface-shadow); }
+.stat strong { font-size: 30px; }
+.stat div > span { font-size: 10px; line-height: 1.5; }
+.stat-icon { flex-shrink: 0; padding: 10px; border-radius: 14px; color: #62735e; border: 1px solid #ffffffed; background: linear-gradient(145deg, #fff, #d5e0caac); box-shadow: inset 0 2px 2px #fff, 0 5px 12px #405b3014; }
+.stat-icon-1 { color: #917343; background: linear-gradient(145deg, #fff, #ebd5a6b0); }
+.stat-icon-2 { color: #487c6a; background: linear-gradient(145deg, #fff, #bcdccfb0); }
+.stat-icon-3 { color: #8f677f; background: linear-gradient(145deg, #fff, #e1c4dcb0); }
+.reading-goal, .library, .auth-card, .journal, .book-progress { border: 1px solid var(--glass-edge); border-radius: 22px; background: var(--glass); -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px); box-shadow: var(--surface-shadow); }
+.reading-goal { padding: 23px 26px; margin-bottom: 24px; }
+.goal-header { gap: 18px; }
+.goal-header p { font-size: 11px; max-width: 350px; }
+.library { padding: 24px; }
+.library-controls { gap: 12px; }
+.library .tabs { gap: 19px; overflow-x: auto; }
+.library .tabs button { font-size: 11px; padding-bottom: 15px; }
+.library .tabs button span { background: #f0eee9; border-radius: 7px; }
+.library .search-input { background: #ffffffa6; border-radius: 11px; }
+.library .book-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px 22px; }
+.book-card { border-radius: 14px; transition: transform .2s; }
+.book-card:hover { transform: translateY(-4px); }
+.book-card h3 { font-size: 13px; }
+.book-stage { height: 220px; border-radius: 12px 12px 0 0; background: linear-gradient(145deg, #e5e4dc80, #f8f4ed4d); }
+input, textarea, select { border-radius: 10px; }
+.auth-card { padding: 32px; }
+.details-page { padding-inline: 40px; }
+.details-layout { grid-template-columns: minmax(180px, .7fr) minmax(0, 1.6fr); gap: 28px; }
+.journal { padding: 28px; min-width: 0; }
+.book-progress { padding: 20px; }
+footer { margin-inline: 40px; gap: 16px; }
+@media (min-width: 1280px) and (max-width: 1480px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .stats .stat { padding: 16px 20px; }
+  .goal-header { flex-wrap: wrap; }
+  .goal-header p { max-width: none; }
+  .goal-form > label { margin-bottom: 6px; }
+  .page-heading { align-items: flex-start; }
+}
+@media (max-width: 1279px) {
+  .reader-app { padding-right: 0; }
+  .library .book-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  footer { padding-bottom: 90px; }
+}
+@media (max-width: 800px) {
+  header { height: auto; min-height: 100px; flex-wrap: wrap; gap: 18px; padding: 22px 24px; }
+  .reader-app .dashboard, .details-page { padding: 28px 24px 0; }
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .library .book-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+  .page-heading { align-items: flex-start; }
+  .goal-header { flex-direction: column; align-items: flex-start; }
+  .goal-header p { max-width: none; }
+  .details-layout { grid-template-columns: 1fr; }
+  .book-summary { max-width: 360px; margin: auto; width: 100%; }
+  .auth-layout { grid-template-columns: 1fr; padding: 30px 24px; }
+  .auth-aside { display: none; }
+  footer { margin-inline: 24px; flex-wrap: wrap; }
+}
+@media (max-width: 540px) {
+  header { padding: 20px; }
+  .brand { font-size: 23px; }
+  nav { width: 100%; justify-content: space-between; gap: 12px; font-size: 11px; }
+  .reader-app .dashboard, .details-page { padding: 28px 16px 0; }
+  .page-heading { flex-direction: column; gap: 16px; margin-bottom: 22px; }
+  .page-heading h1 { font-size: 39px; }
+  .page-heading .eyebrow { font-size: 8px; }
+  .stats { gap: 10px; }
+  .stats .stat { gap: 9px; padding: 14px 12px; border-radius: 16px; }
+  .stat-icon { padding: 8px; }
+  .stat strong { font-size: 27px; }
+  .stat div > span { font-size: 9px; }
+  .reading-goal, .library { padding: 20px 16px; border-radius: 18px; }
+  .library-controls { flex-wrap: wrap; padding-block: 16px; }
+  .library .search-input { max-width: none; }
+  .library .book-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px 16px; }
+  .book-stage { height: 200px; }
+  .shelf-meta span:last-child { display: none; }
+  .journal { padding: 22px 16px; }
+  .journal-top { flex-wrap: wrap; }
+  footer { margin-inline: 20px; }
+}

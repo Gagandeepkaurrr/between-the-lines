@@ -1,6 +1,7 @@
 import json
 import os
 from contextlib import asynccontextmanager
+from urllib.parse import urlsplit
 
 import httpx
 from fastapi import Depends, FastAPI, HTTPException, Query, Request, Response
@@ -44,7 +45,7 @@ async def check_origin(request: Request, call_next):
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok"}
+    return {"status": "ok", "version": "chat-groq-v2"}
 
 
 @app.post("/api/auth/signup", response_model=UserOut, status_code=201)
@@ -186,25 +187,37 @@ async def chat(data: ChatRequest, user: User = Depends(current_user), db: Sessio
         "It contains up to 50 recently added books from this reader's shelf: "
         + json.dumps(context)
     )}, *[message.model_dump() for message in data.messages]]
-    model = os.getenv("OLLAMA_MODEL", "llama3.2:1b")
+    api_key = os.getenv("GROQ_API_KEY", "").strip()
+    hosted = bool(api_key)
+    model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant") if hosted else os.getenv("OLLAMA_MODEL", "llama3.2:1b")
     base_url = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434").rstrip("/")
+    if os.getenv("RENDER") and not hosted and urlsplit(base_url).hostname in {"127.0.0.1", "localhost", "::1"}:
+        raise HTTPException(503, "Chat is not configured. Add GROQ_API_KEY in the Render backend environment and redeploy.")
     try:
         async with httpx.AsyncClient(timeout=120) as client:
-            response = await client.post(f"{base_url}/api/chat", json={
-                "model": model, "messages": messages, "stream": False,
-                "options": {"num_predict": 400},
-            })
+            url = "https://api.groq.com/openai/v1/chat/completions" if hosted else f"{base_url}/api/chat"
+            payload = {"model": model, "messages": messages, "stream": False}
+            payload.update({"max_tokens": 400} if hosted else {"options": {"num_predict": 400}})
+            response = await client.post(url, json=payload,
+                                         headers={"Authorization": f"Bearer {api_key}"} if hosted else {})
+            if response.status_code == 429:
+                raise HTTPException(429, "The AI usage limit was reached. Please try again later.")
+            if hosted and response.status_code in {401, 403}:
+                raise HTTPException(503, "The chat API key needs attention. Check GROQ_API_KEY on the backend.")
+            if hosted and response.status_code == 400:
+                raise HTTPException(503, "The AI model configuration needs attention. Check GROQ_MODEL on the backend.")
             if response.status_code == 404:
-                raise HTTPException(503, f"Chat model is missing. Run 'ollama pull {model}' on the server.")
+                detail = "The configured Groq model is unavailable. Check GROQ_MODEL." if hosted else f"Chat model is missing. Run 'ollama pull {model}' on the server."
+                raise HTTPException(503, detail)
             response.raise_for_status()
             result = response.json()
-            reply = result.get("message", {}).get("content") if isinstance(result, dict) else None
+            reply = result["choices"][0]["message"]["content"] if hosted else result.get("message", {}).get("content")
             if not isinstance(reply, str) or not reply.strip():
                 raise ValueError("Empty chat response")
     except httpx.TimeoutException:
         raise HTTPException(504, "The AI took too long to reply. Please try again.")
     except httpx.HTTPError:
-        raise HTTPException(503, "Chat is unavailable. Start Ollama on the server and try again.")
-    except (ValueError, AttributeError):
+        raise HTTPException(503, "The AI service is unavailable. Please try again shortly." if hosted else "Chat is unavailable. Start Ollama on the server and try again.")
+    except (ValueError, AttributeError, KeyError, IndexError, TypeError):
         raise HTTPException(502, "The AI returned an unreadable reply. Please try again.")
     return {"reply": reply.strip()[:2000]}

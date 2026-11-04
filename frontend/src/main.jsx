@@ -7,10 +7,14 @@ import AuthPage from "./AuthPage";
 import Bookshelf from "./Bookshelf";
 import BookDetails from "./BookDetails";
 import "./styles.css";
+import "./modern.css";
+import BookChat from "./BookChat";
+import { useAuth } from "./AuthContext";
 
 function App() {
+  const { user } = useAuth();
   return (
-    <>
+    <div className={user ? "reader-app" : "public-app"}>
       <BackgroundStickers />
       <Header />
       <Routes>
@@ -53,7 +57,8 @@ function App() {
         <p>A little home for the books that make us.</p>
         <span className="footer-mark">READ. REFLECT. REPEAT.</span>
       </footer>
-    </>
+      {user && <BookChat key={user.id} />}
+    </div>
   );
 }
 
