@@ -261,12 +261,16 @@ def test_chat_upstream_errors(client, monkeypatch, failure, expected):
 
 def test_hosted_chat_uses_groq(client, monkeypatch):
     signup(client)
+    monkeypatch.delenv('GROQ_MODEL', raising=False)
     monkeypatch.setenv('GROQ_API_KEY', 'test-key')
 
     async def mock_post(self, url, **kwargs):
         assert url == 'https://api.groq.com/openai/v1/chat/completions'
         assert kwargs['headers']['Authorization'] == 'Bearer test-key'
-        assert kwargs['json']['max_tokens'] == 400
+        assert kwargs['json']['max_completion_tokens'] == 1024
+        assert kwargs['json']['model'] == 'openai/gpt-oss-20b'
+        assert kwargs['json']['reasoning_effort'] == 'low'
+        assert kwargs['json']['include_reasoning'] is False
         assert 'options' not in kwargs['json']
         return httpx.Response(200, json={'choices': [{'message': {'content': 'Hello reader'}}]}, request=httpx.Request('POST', url))
 
@@ -303,4 +307,19 @@ def test_render_chat_needs_hosted_configuration(client, monkeypatch, base_url):
 
 def test_health_identifies_groq_capable_release(client):
     response = client.get('/api/health')
-    assert response.json() == {'status': 'ok', 'version': 'chat-groq-v2'}
+    assert response.json() == {'status': 'ok', 'version': 'chat-groq-v3'}
+
+
+def test_custom_groq_model_omits_model_specific_parameters(client, monkeypatch):
+    signup(client)
+    monkeypatch.setenv('GROQ_API_KEY', 'test-key')
+    monkeypatch.setenv('GROQ_MODEL', ' another-model ')
+
+    async def mock_post(self, url, **kwargs):
+        assert kwargs['json']['model'] == 'another-model'
+        assert 'reasoning_effort' not in kwargs['json']
+        assert 'include_reasoning' not in kwargs['json']
+        return httpx.Response(200, json={'choices': [{'message': {'content': 'Hello'}}]}, request=httpx.Request('POST', url))
+
+    monkeypatch.setattr(httpx.AsyncClient, 'post', mock_post)
+    assert client.post('/api/chat', json={'messages': [{'role': 'user', 'content': 'Hi'}]}).status_code == 200

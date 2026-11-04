@@ -251,7 +251,7 @@ Your deployed backend cannot reach Ollama installed on your laptop. For the depl
 
 ```dotenv
 GROQ_API_KEY=your-private-key
-GROQ_MODEL=llama-3.1-8b-instant
+GROQ_MODEL=openai/gpt-oss-20b
 ```
 
 Save and redeploy the updated backend; deploy the updated frontend as well. Never put the key into Vercel's frontend variables or commit it. When `GROQ_API_KEY` is set, the backend uses Groq; otherwise local development uses Ollama. Groq receives the conversation and the shelf context described above. Free-tier limits apply; the chat shows a retry message when the provider returns a usage-limit error. No automatic paid fallback is configured.
@@ -259,4 +259,4 @@ Save and redeploy the updated backend; deploy the updated frontend as well. Neve
 Book companion stays visible in a dedicated right sidebar on desktop (1280px and wider), including the book detail pages. On smaller screens, the “Book companion” button opens the panel. Closing it keeps the conversation until refresh or logout. Escape closes the small-screen panel and returns focus to its button.
 
 
-If the deployed site still says “Start Ollama on the server”, it is running the old backend or the key is missing from that backend service. Push the current code, then in Render choose **Manual Deploy → Deploy latest commit** for `between-the-lines-api`. The environment variable **name** must be exactly `GROQ_API_KEY` (no quotes or backticks), and its **value** must be the actual secret key. Save the environment and redeploy. The health endpoint `/api/health` should then include `"version": "chat-groq-v2"`; this is a release marker, not a check that the API key is valid. The updated backend reports missing keys, invalid keys, unavailable models, and usage limits separately.
+If the deployed site still says “Start Ollama on the server”, it is running the old backend or the key is missing from that backend service. Push the current code, then in Render choose **Manual Deploy → Deploy latest commit** for `between-the-lines-api`. The environment variable **name** must be exactly `GROQ_API_KEY` (no quotes or backticks), and its **value** must be the actual secret key. Save the environment and redeploy. The health endpoint `/api/health` should then include `"version": "chat-groq-v3"`; this is a release marker, not a check that the API key is valid. The updated backend reports missing keys, invalid keys, unavailable models, and usage limits separately.

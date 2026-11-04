@@ -45,7 +45,7 @@ async def check_origin(request: Request, call_next):
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "chat-groq-v2"}
+    return {"status": "ok", "version": "chat-groq-v3"}
 
 
 @app.post("/api/auth/signup", response_model=UserOut, status_code=201)
@@ -189,7 +189,7 @@ async def chat(data: ChatRequest, user: User = Depends(current_user), db: Sessio
     )}, *[message.model_dump() for message in data.messages]]
     api_key = os.getenv("GROQ_API_KEY", "").strip()
     hosted = bool(api_key)
-    model = os.getenv("GROQ_MODEL", "llama-3.1-8b-instant") if hosted else os.getenv("OLLAMA_MODEL", "llama3.2:1b")
+    model = (os.getenv("GROQ_MODEL", "").strip() or "openai/gpt-oss-20b") if hosted else os.getenv("OLLAMA_MODEL", "llama3.2:1b")
     base_url = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434").rstrip("/")
     if os.getenv("RENDER") and not hosted and urlsplit(base_url).hostname in {"127.0.0.1", "localhost", "::1"}:
         raise HTTPException(503, "Chat is not configured. Add GROQ_API_KEY in the Render backend environment and redeploy.")
@@ -197,7 +197,13 @@ async def chat(data: ChatRequest, user: User = Depends(current_user), db: Sessio
         async with httpx.AsyncClient(timeout=120) as client:
             url = "https://api.groq.com/openai/v1/chat/completions" if hosted else f"{base_url}/api/chat"
             payload = {"model": model, "messages": messages, "stream": False}
-            payload.update({"max_tokens": 400} if hosted else {"options": {"num_predict": 400}})
+            if hosted:
+                # Reasoning models need room for both reasoning and the final answer.
+                payload["max_completion_tokens"] = 1024
+                if model in {"openai/gpt-oss-20b", "openai/gpt-oss-120b"}:
+                    payload.update({"reasoning_effort": "low", "include_reasoning": False})
+            else:
+                payload["options"] = {"num_predict": 400}
             response = await client.post(url, json=payload,
                                          headers={"Authorization": f"Bearer {api_key}"} if hosted else {})
             if response.status_code == 429:
