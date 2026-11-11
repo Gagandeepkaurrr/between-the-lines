@@ -252,11 +252,24 @@ Your deployed backend cannot reach Ollama installed on your laptop. For the depl
 ```dotenv
 GROQ_API_KEY=your-private-key
 GROQ_MODEL=openai/gpt-oss-20b
+# Set true ONLY after confirming this key belongs to a Groq Free account.
+GROQ_FREE_TIER_CONFIRMED=false
 ```
 
-Save and redeploy the updated backend; deploy the updated frontend as well. Never put the key into Vercel's frontend variables or commit it. When `GROQ_API_KEY` is set, the backend uses Groq; otherwise local development uses Ollama. Groq receives the conversation and the shelf context described above. Free-tier limits apply; the chat shows a retry message when the provider returns a usage-limit error. No automatic paid fallback is configured.
+Save and redeploy the updated backend; deploy the updated frontend as well. Never put the key into Vercel's frontend variables or commit it. When `GROQ_API_KEY` is set, cloud requests are blocked unless `GROQ_FREE_TIER_CONFIRMED=true`. Otherwise local development uses Ollama. Groq receives the conversation and the shelf context described above. Free-tier limits apply; the chat shows a retry message when the provider returns a usage-limit error. No automatic paid fallback is configured.
 
 Book companion stays visible in a dedicated right sidebar on desktop (1280px and wider), including the book detail pages. On smaller screens, the “Book companion” button opens the panel. Closing it keeps the conversation until refresh or logout. Escape closes the small-screen panel and returns focus to its button.
 
 
-If the deployed site still says “Start Ollama on the server”, it is running the old backend or the key is missing from that backend service. Push the current code, then in Render choose **Manual Deploy → Deploy latest commit** for `between-the-lines-api`. The environment variable **name** must be exactly `GROQ_API_KEY` (no quotes or backticks), and its **value** must be the actual secret key. Save the environment and redeploy. The health endpoint `/api/health` should then include `"version": "chat-groq-v3"`; this is a release marker, not a check that the API key is valid. The updated backend reports missing keys, invalid keys, unavailable models, and usage limits separately.
+If the deployed site still says “Start Ollama on the server”, it is running the old backend or the key is missing from that backend service. Push the current code, then in Render choose **Manual Deploy → Deploy latest commit** for `between-the-lines-api`. The environment variable **name** must be exactly `GROQ_API_KEY` (no quotes or backticks), and its **value** must be the actual secret key. Save the environment and redeploy. The health endpoint `/api/health` should then include `"version": "chat-free-tier-v4"`; this is a release marker, not a check that the API key is valid. The updated backend reports missing keys, invalid keys, unavailable models, and usage limits separately.
+
+
+### Keep the chatbot free of API charges
+
+This project never reads `OPENAI_API_KEY` or sends requests to OpenAI's paid API. `openai/gpt-oss-20b` is an open-weight model name on **Groq**, not a connection to your ChatGPT account or OpenAI credit balance.
+
+To enable hosted chat, check **Groq Console → Settings → Billing** and confirm the account for your API key is on **Free**. Only then set `GROQ_FREE_TIER_CONFIRMED=true` in Render and redeploy. Until this is set, the app makes no Groq chat requests. This flag is your confirmation, not an automatic billing-plan check. Keep the account on Free and reset the flag to false before upgrading or changing to a paid account. Free-tier quota errors stop the request; there is no retry loop, automatic upgrade, or paid-provider fallback. Payment-required responses also stop chat.
+
+If you cannot confirm a free cloud plan, keep cloud chat paused or use the local Ollama setup with `GROQ_API_KEY` unset. Local inference uses your computer's resources without per-token API charges. Hosting/database charges are separate and must also stay on their providers' free plans. Work performed in a coding assistant is separate from the website's AI usage.
+
+References: [Groq billing plans](https://console.groq.com/docs/billing-faqs), [Groq usage limits](https://console.groq.com/docs/rate-limits).

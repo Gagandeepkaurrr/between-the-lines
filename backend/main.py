@@ -45,7 +45,7 @@ async def check_origin(request: Request, call_next):
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "version": "chat-groq-v3"}
+    return {"status": "ok", "version": "chat-free-tier-v4"}
 
 
 @app.post("/api/auth/signup", response_model=UserOut, status_code=201)
@@ -174,6 +174,12 @@ async def search_books(q: str = Query(min_length=1, max_length=200), user: User 
 
 @app.post("/api/chat", response_model=ChatReply)
 async def chat(data: ChatRequest, user: User = Depends(current_user), db: Session = Depends(get_db)):
+    api_key = os.getenv("GROQ_API_KEY", "").strip()
+    hosted = bool(api_key)
+    # This is an operator confirmation, not a provider billing lookup. Fail closed
+    # until the owner has checked that this key belongs to a Groq Free account.
+    if hosted and os.getenv("GROQ_FREE_TIER_CONFIRMED", "").strip().lower() != "true":
+        raise HTTPException(503, "Cloud chat is paused until the site owner confirms the AI provider's Free plan. Your bookshelf is still available.")
     # Context comes from this account only; journal notes and quotes are not sent.
     shelf = db.scalars(select(Book).where(Book.owner_id == user.id)
                        .order_by(Book.id.desc()).limit(50)).all()
@@ -187,8 +193,8 @@ async def chat(data: ChatRequest, user: User = Depends(current_user), db: Sessio
         "It contains up to 50 recently added books from this reader's shelf: "
         + json.dumps(context)
     )}, *[message.model_dump() for message in data.messages]]
-    api_key = os.getenv("GROQ_API_KEY", "").strip()
-    hosted = bool(api_key)
+    # The openai/ prefix below names an open-weight model hosted by Groq.
+    # OPENAI_API_KEY is deliberately unused; requests never go to api.openai.com.
     model = (os.getenv("GROQ_MODEL", "").strip() or "openai/gpt-oss-20b") if hosted else os.getenv("OLLAMA_MODEL", "llama3.2:1b")
     base_url = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434").rstrip("/")
     if os.getenv("RENDER") and not hosted and urlsplit(base_url).hostname in {"127.0.0.1", "localhost", "::1"}:
@@ -206,8 +212,10 @@ async def chat(data: ChatRequest, user: User = Depends(current_user), db: Sessio
                 payload["options"] = {"num_predict": 400}
             response = await client.post(url, json=payload,
                                          headers={"Authorization": f"Bearer {api_key}"} if hosted else {})
+            if hosted and response.status_code == 402:
+                raise HTTPException(503, "AI access requires payment or a billing change. Chat is paused; no paid fallback was attempted.")
             if response.status_code == 429:
-                raise HTTPException(429, "The AI usage limit was reached. Please try again later.")
+                raise HTTPException(429, "The AI usage limit was reached. Please wait for the allowance to reset. No paid fallback was attempted.")
             if hosted and response.status_code in {401, 403}:
                 raise HTTPException(503, "The chat API key needs attention. Check GROQ_API_KEY on the backend.")
             if hosted and response.status_code == 400:

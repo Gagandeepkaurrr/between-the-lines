@@ -263,6 +263,7 @@ def test_hosted_chat_uses_groq(client, monkeypatch):
     signup(client)
     monkeypatch.delenv('GROQ_MODEL', raising=False)
     monkeypatch.setenv('GROQ_API_KEY', 'test-key')
+    monkeypatch.setenv('GROQ_FREE_TIER_CONFIRMED', 'true')
 
     async def mock_post(self, url, **kwargs):
         assert url == 'https://api.groq.com/openai/v1/chat/completions'
@@ -280,10 +281,11 @@ def test_hosted_chat_uses_groq(client, monkeypatch):
     assert response.json()['reply'] == 'Hello reader'
 
 
-@pytest.mark.parametrize('upstream,expected', [(400, 503), (401, 503), (403, 503), (404, 503), (429, 429), (500, 503)])
+@pytest.mark.parametrize('upstream,expected', [(400, 503), (401, 503), (402, 503), (403, 503), (404, 503), (429, 429), (500, 503)])
 def test_hosted_chat_errors(client, monkeypatch, upstream, expected):
     signup(client)
     monkeypatch.setenv('GROQ_API_KEY', 'test-key')
+    monkeypatch.setenv('GROQ_FREE_TIER_CONFIRMED', 'true')
 
     async def mock_post(self, url, **kwargs):
         return httpx.Response(upstream, json={}, request=httpx.Request('POST', url))
@@ -307,12 +309,13 @@ def test_render_chat_needs_hosted_configuration(client, monkeypatch, base_url):
 
 def test_health_identifies_groq_capable_release(client):
     response = client.get('/api/health')
-    assert response.json() == {'status': 'ok', 'version': 'chat-groq-v3'}
+    assert response.json() == {'status': 'ok', 'version': 'chat-free-tier-v4'}
 
 
 def test_custom_groq_model_omits_model_specific_parameters(client, monkeypatch):
     signup(client)
     monkeypatch.setenv('GROQ_API_KEY', 'test-key')
+    monkeypatch.setenv('GROQ_FREE_TIER_CONFIRMED', 'true')
     monkeypatch.setenv('GROQ_MODEL', ' another-model ')
 
     async def mock_post(self, url, **kwargs):
@@ -323,3 +326,56 @@ def test_custom_groq_model_omits_model_specific_parameters(client, monkeypatch):
 
     monkeypatch.setattr(httpx.AsyncClient, 'post', mock_post)
     assert client.post('/api/chat', json={'messages': [{'role': 'user', 'content': 'Hi'}]}).status_code == 200
+
+
+@pytest.mark.parametrize('confirmation', [None, '', 'false', 'yes'])
+def test_unconfirmed_groq_plan_never_sends_a_request(client, monkeypatch, confirmation):
+    signup(client)
+    monkeypatch.setenv('GROQ_API_KEY', 'test-key')
+    if confirmation is None:
+        monkeypatch.delenv('GROQ_FREE_TIER_CONFIRMED', raising=False)
+    else:
+        monkeypatch.setenv('GROQ_FREE_TIER_CONFIRMED', confirmation)
+
+    async def no_cloud_request(*args, **kwargs):
+        pytest.fail('An unconfirmed account must not send any AI request')
+
+    monkeypatch.setattr(httpx.AsyncClient, 'post', no_cloud_request)
+    response = client.post('/api/chat', json={'messages': [{'role': 'user', 'content': 'Hi'}]})
+    assert response.status_code == 503
+    assert 'Free plan' in response.json()['detail']
+
+
+def test_openai_credit_key_is_never_used(client, monkeypatch):
+    signup(client)
+    monkeypatch.delenv('GROQ_API_KEY', raising=False)
+    monkeypatch.delenv('RENDER', raising=False)
+    monkeypatch.setenv('OPENAI_API_KEY', 'must-not-be-sent')
+    monkeypatch.setenv('OLLAMA_BASE_URL', 'http://127.0.0.1:11434')
+
+    async def local_reply(self, url, **kwargs):
+        assert url == 'http://127.0.0.1:11434/api/chat'
+        assert kwargs['headers'] == {}
+        assert 'must-not-be-sent' not in str(kwargs)
+        return httpx.Response(200, json={'message': {'content': 'Hello from local AI'}}, request=httpx.Request('POST', url))
+
+    monkeypatch.setattr(httpx.AsyncClient, 'post', local_reply)
+    response = client.post('/api/chat', json={'messages': [{'role': 'user', 'content': 'Hi'}]})
+    assert response.status_code == 200
+
+
+@pytest.mark.parametrize('status', [402, 429])
+def test_billing_and_quota_errors_do_not_retry_or_fallback(client, monkeypatch, status):
+    signup(client)
+    monkeypatch.setenv('GROQ_API_KEY', 'test-key')
+    monkeypatch.setenv('GROQ_FREE_TIER_CONFIRMED', 'true')
+    calls = []
+
+    async def exhausted(self, url, **kwargs):
+        calls.append(url)
+        return httpx.Response(status, json={}, request=httpx.Request('POST', url))
+
+    monkeypatch.setattr(httpx.AsyncClient, 'post', exhausted)
+    response = client.post('/api/chat', json={'messages': [{'role': 'user', 'content': 'Hi'}]})
+    assert response.status_code == (429 if status == 429 else 503)
+    assert calls == ['https://api.groq.com/openai/v1/chat/completions']
